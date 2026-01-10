@@ -31,14 +31,14 @@ A responsive terminal dashboard for monitoring Samba NAS shares.
 │ R ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂       │
 │ W ▁▁▂▃▄▅▆▇▆▅▄▃▂▁▁▂▃▄▅▆▇▆▅▄▃▂▁▁       │
 │───────────────────────────────────────│
-│ CONN:1 sean@192.168.1.68              │
+│ CONN:1 user@192.168.x.x               │
 │ FILE:3 video.mp4[W]                   │
 │───────────────────────────────────────│
-│ \\192.168.1.72\Expansion              │
+│ NAS                                   │
 │ Session: ↕1.2G  0:05:23               │
 │───────────────────────────────────────│
 │           Ctrl+C exit                 │
-╰────────────Expansion──────────────────╯
+╰────────────────NAS────────────────────╯
 ```
 
 ## Requirements
@@ -63,7 +63,7 @@ pip install psutil rich
 
 ```bash
 # Clone the repo
-git clone https://github.com/seankd01/nas-monitor.git
+git clone https://github.com/Sean-Kenneth-Doherty/nas-monitor.git
 
 # Make executable and add to path
 chmod +x nas-monitor/nas
@@ -78,8 +78,8 @@ echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/smbstatus" | sudo tee /etc/sudoers.d/sm
 Edit the script to set your mount path and share name:
 
 ```python
-MOUNT_PATH = "/run/media/sean/Expansion"
-SHARE_NAME = "Expansion"
+MOUNT_PATH = "/mnt/nas"  # Your NAS mount point
+SHARE_NAME = "NAS"       # Display name for the share
 ```
 
 ## Usage

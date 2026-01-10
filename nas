@@ -20,10 +20,10 @@ from rich.text import Text
 from rich.align import Align
 from rich import box
 
-# Configuration
-MOUNT_PATH = "/run/media/sean/Expansion"
-SHARE_NAME = "Expansion"
-DEVICE = "/dev/sde2"
+# Configuration - Edit these for your setup
+MOUNT_PATH = "/mnt/nas"  # Your NAS mount point
+SHARE_NAME = "NAS"       # Display name for the share
+DEVICE = "/dev/sda1"     # Fallback device if auto-detect fails
 REFRESH_RATE = 0.5
 SMOOTHING_FACTOR = 0.3
 ROLLING_WINDOW = 10
@@ -311,7 +311,7 @@ class NASMonitor:
 
         # === Network & session ===
         net = Text()
-        net.append(" \\\\192.168.1.72\\Expansion", style="green")
+        net.append(f" {SHARE_NAME}", style="green")
         lines.append(net)
 
         sess = Text()
