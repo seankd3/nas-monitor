@@ -41,6 +41,11 @@ class NASState:
         self.write_hist = deque(maxlen=60)
         self.read_avg_q = deque(maxlen=4)
         self.write_avg_q = deque(maxlen=4)
+        # Longer rolling averages (30s and 60s at 0.5s intervals)
+        self.read_avg_30s = deque(maxlen=60)
+        self.write_avg_30s = deque(maxlen=60)
+        self.read_avg_60s = deque(maxlen=120)
+        self.write_avg_60s = deque(maxlen=120)
         self.start = time.time()
         self.lock = threading.Lock()
         self.prev_disk_io = psutil.disk_io_counters()
@@ -98,6 +103,11 @@ def update_state():
                     state.peak_w = max(state.peak_w, state.write_speed)
                     state.read_hist.append(state.read_speed)
                     state.write_hist.append(state.write_speed)
+                    # Track longer rolling averages
+                    state.read_avg_30s.append(r_speed)
+                    state.write_avg_30s.append(w_speed)
+                    state.read_avg_60s.append(r_speed)
+                    state.write_avg_60s.append(w_speed)
 
                 state.prev_disk_io = curr_io
                 state.prev_time = now
@@ -160,11 +170,21 @@ def get_data_json():
         read_hist = [min(100, int(v / max_hist * 100)) for v in list(state.read_hist)[-30:]]
         write_hist = [min(100, int(v / max_hist * 100)) for v in list(state.write_hist)[-30:]]
 
+        # Calculate rolling averages
+        r_avg_30 = sum(state.read_avg_30s) / len(state.read_avg_30s) if state.read_avg_30s else 0
+        w_avg_30 = sum(state.write_avg_30s) / len(state.write_avg_30s) if state.write_avg_30s else 0
+        r_avg_60 = sum(state.read_avg_60s) / len(state.read_avg_60s) if state.read_avg_60s else 0
+        w_avg_60 = sum(state.write_avg_60s) / len(state.write_avg_60s) if state.write_avg_60s else 0
+
         data = {
             "read_speed": fmt_speed(state.read_speed),
             "write_speed": fmt_speed(state.write_speed),
             "peak_r": fmt_speed(state.peak_r),
             "peak_w": fmt_speed(state.peak_w),
+            "read_avg_30": fmt_speed(r_avg_30),
+            "write_avg_30": fmt_speed(w_avg_30),
+            "read_avg_60": fmt_speed(r_avg_60),
+            "write_avg_60": fmt_speed(w_avg_60),
             "total": fmt_size(state.total),
             "uptime": f"{h:02d}:{m:02d}:{s:02d}",
             "read_hist": read_hist,
@@ -323,12 +343,16 @@ PAGE_HTML = f"""<!DOCTYPE html>
         <span class="box-title">DISK READ</span>
         <div class="row"><span class="label">Speed</span><span id="r-spd" class="val big">0B/s</span></div>
         <div class="row"><span class="label">Peak</span><span id="r-pk" class="val">0B/s</span></div>
+        <div class="row"><span class="label">30s Avg</span><span id="r-avg30" class="val">0B/s</span></div>
+        <div class="row"><span class="label">60s Avg</span><span id="r-avg60" class="val">0B/s</span></div>
         <div id="r-graph" class="graph"></div>
     </div>
     <div class="box" style="grid-row: 2;">
         <span class="box-title">DISK WRITE</span>
         <div class="row"><span class="label">Speed</span><span id="w-spd" class="val big">0B/s</span></div>
         <div class="row"><span class="label">Peak</span><span id="w-pk" class="val">0B/s</span></div>
+        <div class="row"><span class="label">30s Avg</span><span id="w-avg30" class="val">0B/s</span></div>
+        <div class="row"><span class="label">60s Avg</span><span id="w-avg60" class="val">0B/s</span></div>
         <div id="w-graph" class="graph"></div>
     </div>
     <div class="box" style="grid-row: 2;">
@@ -379,6 +403,10 @@ function upd(){{
         document.getElementById('w-spd').textContent=d.write_speed;
         document.getElementById('r-pk').textContent=d.peak_r;
         document.getElementById('w-pk').textContent=d.peak_w;
+        document.getElementById('r-avg30').textContent=d.read_avg_30;
+        document.getElementById('r-avg60').textContent=d.read_avg_60;
+        document.getElementById('w-avg30').textContent=d.write_avg_30;
+        document.getElementById('w-avg60').textContent=d.write_avg_60;
         document.getElementById('r-graph').innerHTML=d.read_hist.map(h=>`<div class="bar" style="height:${{Math.max(2,h)}}%"></div>`).join('');
         document.getElementById('w-graph').innerHTML=d.write_hist.map(h=>`<div class="bar w" style="height:${{Math.max(2,h)}}%"></div>`).join('');
         document.getElementById('cpu').textContent=d.cpu_pct+'%';
